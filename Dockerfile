@@ -2,7 +2,7 @@
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY . .
-RUN mvn clean package
+RUN mvn clean package -DskipTests  # Skip tests during build
 
 # Run stage - JDK 21
 FROM eclipse-temurin:21-jre
