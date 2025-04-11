@@ -4,6 +4,7 @@ import com.example.model.User;
 import com.example.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -11,10 +12,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*")
 public class AuthController {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @GetMapping("/health")
     public ResponseEntity<String> healthCheck() {
@@ -27,6 +31,8 @@ public class AuthController {
         if (existingUser != null) {
             return ResponseEntity.badRequest().body(null);
         }
+        // Encrypt password before saving
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         User savedUser = userRepository.save(user);
         return ResponseEntity.ok(savedUser);
     }
@@ -34,7 +40,7 @@ public class AuthController {
     @PostMapping("/signin")
     public ResponseEntity<User> signin(@RequestBody User user) {
         User dbUser = userRepository.findByEmail(user.getEmail());
-        if (dbUser != null && dbUser.getPassword().equals(user.getPassword())) {
+        if (dbUser != null && passwordEncoder.matches(user.getPassword(), dbUser.getPassword())) {
             return ResponseEntity.ok(dbUser);
         }
         return ResponseEntity.status(401).body(null);
@@ -47,8 +53,8 @@ public class AuthController {
 
         User dbUser = userRepository.findByEmail(email);
         Map<String, Boolean> response = new HashMap<>();
-        
-        if (dbUser != null && dbUser.getPassword().equals(password)) {
+
+        if (dbUser != null && passwordEncoder.matches(password, dbUser.getPassword())) {
             response.put("verified", true);
         } else {
             response.put("verified", false);
