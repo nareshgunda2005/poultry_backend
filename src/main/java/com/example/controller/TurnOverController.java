@@ -14,89 +14,102 @@ import java.util.Map;
 @RequestMapping("/api/turnover")
 @CrossOrigin(origins = "http://localhost:3000")
 public class TurnOverController {
-    
-    @Autowired
-    private FoodExpensesRepository foodExpensesRepository;
-    @Autowired
-    private VaccinationExpensesRepository vaccinationExpensesRepository;
-    @Autowired
-    private MedicineExpensesRepository medicineExpensesRepository;
-    @Autowired
-    private ShedExpensesRepository shedExpensesRepository;
-    @Autowired
-    private OtherExpensesRepository otherExpensesRepository;
+
     @Autowired
     private OutersSalesRepository outersSalesRepository;
+
     @Autowired
     private DealersSalesRepository dealersSalesRepository;
+
     @Autowired
-    private TurnOverRepository turnOverRepository;
+    private FoodExpensesRepository foodExpensesRepository;
+
+    @Autowired
+    private VaccinationExpensesRepository vaccinationExpensesRepository;
+
+    @Autowired
+    private MedicineExpensesRepository medicineExpensesRepository;
+
+    @Autowired
+    private ShedExpensesRepository shedExpensesRepository;
+
+    @Autowired
+    private OtherExpensesRepository otherExpensesRepository;
 
     @GetMapping("/calculate")
     public ResponseEntity<Map<String, Double>> calculateTurnOver(
             @RequestParam String fromDate,
-            @RequestParam String toDate) {
-        
-        // Get expenses from all tables between dates
-        List<FoodExpenses> foodExpenses = foodExpensesRepository.findAll()
-            .stream()
-            .filter(exp -> exp.getDate().compareTo(fromDate) >= 0 && exp.getDate().compareTo(toDate) <= 0)
-            .toList();
-        List<VaccinationExpenses> vaccinationExpenses = vaccinationExpensesRepository.findAll()
-            .stream()
-            .filter(exp -> exp.getDate().compareTo(fromDate) >= 0 && exp.getDate().compareTo(toDate) <= 0)
-            .toList();
-        List<MedicineExpenses> medicineExpenses = medicineExpensesRepository.findAll()
-            .stream()
-            .filter(exp -> exp.getDate().compareTo(fromDate) >= 0 && exp.getDate().compareTo(toDate) <= 0)
-            .toList();
-        List<ShedExpenses> shedExpenses = shedExpensesRepository.findAll()
-            .stream()
-            .filter(exp -> exp.getDate().compareTo(fromDate) >= 0 && exp.getDate().compareTo(toDate) <= 0)
-            .toList();
-        List<OtherExpenses> otherExpenses = otherExpensesRepository.findAll()
-            .stream()
-            .filter(exp -> exp.getDate().compareTo(fromDate) >= 0 && exp.getDate().compareTo(toDate) <= 0)
-            .toList();
-        
-        // Get sales between dates
-        List<OutersSales> outersSales = outersSalesRepository.findAll()
-            .stream()
-            .filter(sale -> sale.getDate().compareTo(fromDate) >= 0 && sale.getDate().compareTo(toDate) <= 0)
-            .toList();
-        List<DealersSales> dealersSales = dealersSalesRepository.findAll()
-            .stream()
-            .filter(sale -> sale.getDate().compareTo(fromDate) >= 0 && sale.getDate().compareTo(toDate) <= 0)
-            .toList();
+            @RequestParam String toDate,
+            @RequestParam String email) {
+        if (fromDate == null || toDate == null || email == null) {
+            return ResponseEntity.badRequest().body(null);
+        }
 
-        // Calculate totals
-        double totalFoodExpenses = foodExpenses.stream().mapToDouble(FoodExpenses::getCost).sum();
-        double totalVaccinationExpenses = vaccinationExpenses.stream().mapToDouble(VaccinationExpenses::getCost).sum();
-        double totalMedicineExpenses = medicineExpenses.stream().mapToDouble(MedicineExpenses::getCost).sum();
-        double totalShedExpenses = shedExpenses.stream().mapToDouble(ShedExpenses::getCost).sum();
-        double totalOtherExpenses = otherExpenses.stream().mapToDouble(OtherExpenses::getCost).sum();
-        double totalExpenses = totalFoodExpenses + totalVaccinationExpenses + totalMedicineExpenses + totalShedExpenses + totalOtherExpenses;
+        try {
+            // Fetch sales data within the date range for the given email
+            List<OutersSales> outersSales = outersSalesRepository.findByEmail(email)
+                    .stream()
+                    .filter(s -> s.getDate().compareTo(fromDate) >= 0 && s.getDate().compareTo(toDate) <= 0)
+                    .toList();
 
-        double totalOutersSales = outersSales.stream().mapToDouble(OutersSales::getAmount).sum();
-        double totalDealersSales = dealersSales.stream().mapToDouble(DealersSales::getAmount).sum();
-        double totalSales = totalOutersSales + totalDealersSales;
-        double profit = totalSales - totalExpenses;
+            List<DealersSales> dealersSales = dealersSalesRepository.findByEmail(email)
+                    .stream()
+                    .filter(s -> s.getDate().compareTo(fromDate) >= 0 && s.getDate().compareTo(toDate) <= 0)
+                    .toList();
 
-        // Persist the calculation (optional)
-        TurnOver turnOver = new TurnOver();
-        turnOver.setFromDate(fromDate);
-        turnOver.setToDate(toDate);
-        turnOver.setTotalExpenses(totalExpenses);
-        turnOver.setTotalSales(totalSales);
-        turnOver.setProfit(profit);
-        turnOverRepository.save(turnOver);
+            // Calculate total sales
+            double totalOutersSales = outersSales.stream().mapToDouble(OutersSales::getAmount).sum();
+            double totalDealersSales = dealersSales.stream().mapToDouble(DealersSales::getAmount).sum();
+            double totalSales = totalOutersSales + totalDealersSales;
 
-        // Prepare response
-        Map<String, Double> response = new HashMap<>();
-        response.put("totalExpenses", totalExpenses);
-        response.put("totalSales", totalSales);
-        response.put("profit", profit);
+            // Fetch expenses data within the date range for the given email
+            List<FoodExpenses> foodExpenses = foodExpensesRepository.findByEmail(email)
+                    .stream()
+                    .filter(e -> e.getDate().compareTo(fromDate) >= 0 && e.getDate().compareTo(toDate) <= 0)
+                    .toList();
 
-        return ResponseEntity.ok(response);
+            List<VaccinationExpenses> vaccinationExpenses = vaccinationExpensesRepository.findByEmail(email)
+                    .stream()
+                    .filter(e -> e.getDate().compareTo(fromDate) >= 0 && e.getDate().compareTo(toDate) <= 0)
+                    .toList();
+
+            List<MedicineExpenses> medicineExpenses = medicineExpensesRepository.findByEmail(email)
+                    .stream()
+                    .filter(e -> e.getDate().compareTo(fromDate) >= 0 && e.getDate().compareTo(toDate) <= 0)
+                    .toList();
+
+            List<ShedExpenses> shedExpenses = shedExpensesRepository.findByEmail(email)
+                    .stream()
+                    .filter(e -> e.getDate().compareTo(fromDate) >= 0 && e.getDate().compareTo(toDate) <= 0)
+                    .toList();
+
+            List<OtherExpenses> otherExpenses = otherExpensesRepository.findByEmail(email)
+                    .stream()
+                    .filter(e -> e.getDate().compareTo(fromDate) >= 0 && e.getDate().compareTo(toDate) <= 0)
+                    .toList();
+
+            // Calculate total expenses
+            double totalFoodExpenses = foodExpenses.stream().mapToDouble(FoodExpenses::getCost).sum();
+            double totalVaccinationExpenses = vaccinationExpenses.stream().mapToDouble(VaccinationExpenses::getCost).sum();
+            double totalMedicineExpenses = medicineExpenses.stream().mapToDouble(MedicineExpenses::getCost).sum();
+            double totalShedExpenses = shedExpenses.stream().mapToDouble(ShedExpenses::getCost).sum();
+            double totalOtherExpenses = otherExpenses.stream().mapToDouble(OtherExpenses::getCost).sum();
+
+            double totalExpenses = totalFoodExpenses + totalVaccinationExpenses + totalMedicineExpenses +
+                    totalShedExpenses + totalOtherExpenses;
+
+            // Calculate profit
+            double profit = totalSales - totalExpenses;
+
+            // Prepare response
+            Map<String, Double> response = new HashMap<>();
+            response.put("totalSales", totalSales);
+            response.put("totalExpenses", totalExpenses);
+            response.put("profit", profit);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(null);
+        }
     }
 }

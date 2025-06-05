@@ -11,8 +11,9 @@ public class VaccinationExpenses {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String date;
-    private String vaccinationFor; // Renamed from 'name'
+    private String vaccinationFor;
     private double cost;
+    private String email; // Added email field
 
     // Constructors, getters, setters
     public VaccinationExpenses() {}
@@ -24,4 +25,6 @@ public class VaccinationExpenses {
     public void setVaccinationFor(String vaccinationFor) { this.vaccinationFor = vaccinationFor; }
     public double getCost() { return cost; }
     public void setCost(double cost) { this.cost = cost; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 }

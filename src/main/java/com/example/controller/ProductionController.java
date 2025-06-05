@@ -4,6 +4,7 @@ import com.example.model.Production;
 import com.example.repository.ProductionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -14,21 +15,9 @@ import java.util.Map;
 @RequestMapping("/api/production")
 @CrossOrigin(origins = "http://localhost:3000")
 public class ProductionController {
+
     @Autowired
     private ProductionRepository productionRepository;
-
-    @GetMapping("/bird-count")
-    public ResponseEntity<Integer> getBirdCount() {
-        List<Production> productions = productionRepository.findAll();
-        int totalMortality = productions.stream().mapToInt(Production::getMortality).sum();
-        int initialBirdCount = 10000; // Default starting value
-        return ResponseEntity.ok(initialBirdCount - totalMortality);
-    }
-
-    @GetMapping
-    public ResponseEntity<List<Production>> getAllProductions() {
-        return ResponseEntity.ok(productionRepository.findAll());
-    }
 
     @PostMapping
     public ResponseEntity<Production> saveProduction(@RequestBody Production production) {
@@ -38,26 +27,44 @@ public class ProductionController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Production> updateProduction(@PathVariable Long id, @RequestBody Production production) {
-        Production existing = productionRepository.findById(id).orElse(null);
-        if (existing == null) return ResponseEntity.notFound().build();
-        existing.setDate(production.getDate());
-        existing.setEggs(production.getEggs());
-        existing.setBoxes(production.getBoxes());
-        existing.setCost(production.getCost());
-        existing.setMortality(production.getMortality());
-        existing.setFeeds(production.getFeeds());
-        Production updated = productionRepository.save(existing);
-        return ResponseEntity.ok(updated);
+        Production existingProduction = productionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Production entry not found with id: " + id));
+        existingProduction.setDate(production.getDate());
+        existingProduction.setTrays(production.getTrays());
+        existingProduction.setEggs(production.getEggs());
+        existingProduction.setBoxes(production.getBoxes());
+        existingProduction.setCost(production.getCost());
+        existingProduction.setMortality(production.getMortality());
+        existingProduction.setFeeds(production.getFeeds());
+        existingProduction.setDoubleEggs(production.getDoubleEggs());
+        existingProduction.setDamagedEggs(production.getDamagedEggs());
+        existingProduction.setWorkerPresence(production.getWorkerPresence());
+        existingProduction.setProductionPercentage(production.getProductionPercentage()); // New field
+        existingProduction.setEmail(production.getEmail());
+        Production updatedProduction = productionRepository.save(existingProduction);
+        return ResponseEntity.ok(updatedProduction);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Production>> getProductionByEmail(@RequestParam String email) {
+        List<Production> productions = productionRepository.findByEmail(email);
+        return ResponseEntity.ok(productions);
     }
 
     @GetMapping("/check-date")
-    public ResponseEntity<Map<String, Object>> checkDate(@RequestParam String date) {
-        Production existing = productionRepository.findByDate(date);
+    public ResponseEntity<Map<String, Object>> checkDate(@RequestParam String date, @RequestParam String email) {
+        Production production = productionRepository.findByDateAndEmail(date, email)
+                .orElse(null);
         Map<String, Object> response = new HashMap<>();
-        response.put("exists", existing != null);
-        if (existing != null) {
-            response.put("data", existing);
-        }
+        response.put("exists", production != null);
+        response.put("data", production);
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/by-email")
+    @Transactional
+    public ResponseEntity<Void> deleteProductionByEmail(@RequestParam String email) {
+        productionRepository.deleteByEmail(email);
+        return ResponseEntity.ok().build();
     }
 }

@@ -13,13 +13,15 @@ public class DealersSales {
     private String date;
     private int quantity;
     private double amount;
+    private String email; // Added email field
 
     // Constructors
     public DealersSales() {}
-    public DealersSales(String date, int quantity, double amount) {
+    public DealersSales(String date, int quantity, double amount, String email) {
         this.date = date;
         this.quantity = quantity;
         this.amount = amount;
+        this.email = email;
     }
 
     // Getters and Setters
@@ -31,4 +33,6 @@ public class DealersSales {
     public void setQuantity(int quantity) { this.quantity = quantity; }
     public double getAmount() { return amount; }
     public void setAmount(double amount) { this.amount = amount; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 }

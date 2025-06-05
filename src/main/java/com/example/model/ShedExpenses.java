@@ -7,56 +7,23 @@ import jakarta.persistence.Id;
 
 @Entity
 public class ShedExpenses {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String date; // Ensure this field exists
-    private String shedItem; // Specific to Shed expenses
+    private String date;
+    private String shedDescription; // Renamed for clarity
     private double cost;
+    private String email; // Added email field
 
-    // No-args constructor required by JPA
-    public ShedExpenses() {
-    }
-
-    // Parameterized constructor (optional)
-    public ShedExpenses(Long id, String date, String shedItem, double cost) {
-        this.id = id;
-        this.date = date;
-        this.shedItem = shedItem;
-        this.cost = cost;
-    }
-
-    // Getters and setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getDate() { // This was missing or undefined
-        return date;
-    }
-
-    public void setDate(String date) {
-        this.date = date;
-    }
-
-    public String getShedItem() {
-        return shedItem;
-    }
-
-    public void setShedItem(String shedItem) {
-        this.shedItem = shedItem;
-    }
-
-    public double getCost() {
-        return cost;
-    }
-
-    public void setCost(double cost) {
-        this.cost = cost;
-    }
+    public ShedExpenses() {}
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getDate() { return date; }
+    public void setDate(String date) { this.date = date; }
+    public String getShedDescription() { return shedDescription; }
+    public void setShedDescription(String shedDescription) { this.shedDescription = shedDescription; }
+    public double getCost() { return cost; }
+    public void setCost(double cost) { this.cost = cost; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 }

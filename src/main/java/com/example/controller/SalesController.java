@@ -6,6 +6,7 @@ import com.example.repository.OutersSalesRepository;
 import com.example.repository.DealersSalesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -25,7 +26,7 @@ public class SalesController {
 
     @PostMapping("/outers")
     public ResponseEntity<OutersSales> saveOutersSales(@RequestBody OutersSales sales) {
-        if (sales.getDate() == null || sales.getQuantity() <= 0 || sales.getAmount() <= 0) {
+        if (sales.getDate() == null || sales.getQuantity() <= 0 || sales.getAmount() <= 0 || sales.getEmail() == null) {
             return ResponseEntity.badRequest().build();
         }
         OutersSales saved = outersSalesRepository.save(sales);
@@ -34,7 +35,7 @@ public class SalesController {
 
     @PostMapping("/dealers")
     public ResponseEntity<DealersSales> saveDealersSales(@RequestBody DealersSales sales) {
-        if (sales.getDate() == null || sales.getQuantity() <= 0 || sales.getAmount() <= 0) {
+        if (sales.getDate() == null || sales.getQuantity() <= 0 || sales.getAmount() <= 0 || sales.getEmail() == null) {
             return ResponseEntity.badRequest().build();
         }
         DealersSales saved = dealersSalesRepository.save(sales);
@@ -42,11 +43,11 @@ public class SalesController {
     }
 
     @GetMapping("/outers/check-date")
-    public ResponseEntity<Map<String, Object>> checkOutersDate(@RequestParam String date) {
-        if (date == null || date.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(createErrorResponse("Date parameter is required"));
+    public ResponseEntity<Map<String, Object>> checkOutersDate(@RequestParam String date, @RequestParam String email) {
+        if (date == null || date.trim().isEmpty() || email == null) {
+            return ResponseEntity.badRequest().body(createErrorResponse("Date and email parameters are required"));
         }
-        List<OutersSales> sales = outersSalesRepository.findAll()
+        List<OutersSales> sales = outersSalesRepository.findByEmail(email)
             .stream()
             .filter(s -> s.getDate().equals(date))
             .toList();
@@ -58,11 +59,11 @@ public class SalesController {
     }
 
     @GetMapping("/dealers/check-date")
-    public ResponseEntity<Map<String, Object>> checkDealersDate(@RequestParam String date) {
-        if (date == null || date.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(createErrorResponse("Date parameter is required"));
+    public ResponseEntity<Map<String, Object>> checkDealersDate(@RequestParam String date, @RequestParam String email) {
+        if (date == null || date.trim().isEmpty() || email == null) {
+            return ResponseEntity.badRequest().body(createErrorResponse("Date and email parameters are required"));
         }
-        List<DealersSales> sales = dealersSalesRepository.findAll()
+        List<DealersSales> sales = dealersSalesRepository.findByEmail(email)
             .stream()
             .filter(s -> s.getDate().equals(date))
             .toList();
@@ -73,18 +74,30 @@ public class SalesController {
         return ResponseEntity.ok(response);
     }
 
-    // New endpoint to fetch all OutersSales
     @GetMapping("/outers")
-    public ResponseEntity<List<OutersSales>> getAllOutersSales() {
-        List<OutersSales> sales = outersSalesRepository.findAll();
+    public ResponseEntity<List<OutersSales>> getAllOutersSales(@RequestParam String email) {
+        List<OutersSales> sales = outersSalesRepository.findByEmail(email);
         return ResponseEntity.ok(sales);
     }
 
-    // New endpoint to fetch all DealersSales
     @GetMapping("/dealers")
-    public ResponseEntity<List<DealersSales>> getAllDealersSales() {
-        List<DealersSales> sales = dealersSalesRepository.findAll();
+    public ResponseEntity<List<DealersSales>> getAllDealersSales(@RequestParam String email) {
+        List<DealersSales> sales = dealersSalesRepository.findByEmail(email);
         return ResponseEntity.ok(sales);
+    }
+
+    @DeleteMapping("/outers/by-email")
+    @Transactional
+    public ResponseEntity<Void> deleteOutersSalesByEmail(@RequestParam String email) {
+        outersSalesRepository.deleteByEmail(email);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/dealers/by-email")
+    @Transactional
+    public ResponseEntity<Void> deleteDealersSalesByEmail(@RequestParam String email) {
+        dealersSalesRepository.deleteByEmail(email);
+        return ResponseEntity.ok().build();
     }
 
     private Map<String, Object> createErrorResponse(String message) {
