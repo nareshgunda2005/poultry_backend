@@ -22,7 +22,6 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
-    // Directory to store uploaded images
     private static final String UPLOAD_DIR = "Uploads/";
 
     @GetMapping("/health")
@@ -35,6 +34,7 @@ public class AuthController {
             @RequestPart("email") String email,
             @RequestPart("password") String password,
             @RequestPart("username") String username,
+            @RequestPart("poultryName") String poultryName, // Added poultryName
             @RequestPart(value = "profileImage", required = false) MultipartFile profileImage) {
         try {
             // Check if user already exists
@@ -48,13 +48,10 @@ public class AuthController {
             // Handle image upload
             String imagePath = null;
             if (profileImage != null && !profileImage.isEmpty()) {
-                // Create the uploads directory if it doesn't exist
                 File uploadDir = new File(UPLOAD_DIR);
                 if (!uploadDir.exists()) {
                     uploadDir.mkdirs();
                 }
-
-                // Save the file with a unique name (e.g., email-timestamp.extension)
                 String originalFilename = profileImage.getOriginalFilename();
                 String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
                 String fileName = email + "-" + System.currentTimeMillis() + extension;
@@ -68,6 +65,7 @@ public class AuthController {
             user.setEmail(email);
             user.setPassword(password); // Plain text
             user.setUsername(username);
+            user.setPoultryName(poultryName); // Set poultryName
             user.setProfileImage(imagePath);
 
             userRepository.save(user);
@@ -85,9 +83,8 @@ public class AuthController {
     @PostMapping("/signin")
     public ResponseEntity<User> signin(@RequestBody User user) {
         User dbUser = userRepository.findByEmail(user.getEmail());
-        // Compare passwords in plain text
         if (dbUser != null && user.getPassword().equals(dbUser.getPassword())) {
-            return ResponseEntity.ok(dbUser);
+            return ResponseEntity.ok(dbUser); // Returns user with poultryName
         }
         return ResponseEntity.status(401).body(null);
     }
@@ -99,8 +96,6 @@ public class AuthController {
 
         User dbUser = userRepository.findByEmail(email);
         Map<String, Boolean> response = new HashMap<>();
-
-        // Compare passwords in plain text
         if (dbUser != null && password.equals(dbUser.getPassword())) {
             response.put("verified", true);
         } else {
@@ -115,10 +110,9 @@ public class AuthController {
         if (user == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(user); // Returns user with poultryName
     }
 
-    // New endpoint to update password
     @PutMapping(value = "/update-password", consumes = {"multipart/form-data"})
     public ResponseEntity<Map<String, String>> updatePassword(
             @RequestPart("email") String email,
@@ -131,7 +125,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            user.setPassword(newPassword); // Plain text
+            user.setPassword(newPassword);
             userRepository.save(user);
 
             Map<String, String> response = new HashMap<>();
@@ -144,7 +138,6 @@ public class AuthController {
         }
     }
 
-    // New endpoint to update profile image
     @PostMapping(value = "/update-profile-image", consumes = {"multipart/form-data"})
     public ResponseEntity<Map<String, String>> updateProfileImage(
             @RequestPart("email") String email,
@@ -163,13 +156,11 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Create the uploads directory if it doesn't exist
             File uploadDir = new File(UPLOAD_DIR);
             if (!uploadDir.exists()) {
                 uploadDir.mkdirs();
             }
 
-            // Save the file with a unique name
             String originalFilename = profileImage.getOriginalFilename();
             String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
             String fileName = email + "-" + System.currentTimeMillis() + extension;
@@ -177,7 +168,6 @@ public class AuthController {
             Files.write(filePath, profileImage.getBytes());
             String imagePath = "/Uploads/" + fileName;
 
-            // Delete old profile image if it exists
             if (user.getProfileImage() != null) {
                 File oldFile = new File(user.getProfileImage().replace("/Uploads/", UPLOAD_DIR));
                 if (oldFile.exists()) {

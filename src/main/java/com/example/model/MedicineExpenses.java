@@ -12,11 +12,11 @@ public class MedicineExpenses {
     private Long id;
     private String date;
     private String medicineName;
-    private double cost;
-    private String email; // Added email field
+    private Double cost; // Changed to Double for consistency
+    private String email;
 
     public MedicineExpenses() {}
-    public MedicineExpenses(Long id, String date, String medicineName, double cost, String email) {
+    public MedicineExpenses(Long id, String date, String medicineName, Double cost, String email) {
         this.id = id;
         this.date = date;
         this.medicineName = medicineName;
@@ -30,8 +30,8 @@ public class MedicineExpenses {
     public void setDate(String date) { this.date = date; }
     public String getMedicineName() { return medicineName; }
     public void setMedicineName(String medicineName) { this.medicineName = medicineName; }
-    public double getCost() { return cost; }
-    public void setCost(double cost) { this.cost = cost; }
+    public Double getCost() { return cost; }
+    public void setCost(Double cost) { this.cost = cost; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 }

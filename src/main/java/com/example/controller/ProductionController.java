@@ -7,9 +7,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/production")
@@ -21,44 +25,119 @@ public class ProductionController {
 
     @PostMapping
     public ResponseEntity<Production> saveProduction(@RequestBody Production production) {
-        Production savedProduction = productionRepository.save(production);
-        return ResponseEntity.ok(savedProduction);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Production> updateProduction(@PathVariable Long id, @RequestBody Production production) {
-        Production existingProduction = productionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Production entry not found with id: " + id));
-        existingProduction.setDate(production.getDate());
-        existingProduction.setTrays(production.getTrays());
-        existingProduction.setEggs(production.getEggs());
-        existingProduction.setBoxes(production.getBoxes());
-        existingProduction.setCost(production.getCost());
-        existingProduction.setMortality(production.getMortality());
-        existingProduction.setFeeds(production.getFeeds());
-        existingProduction.setDoubleEggs(production.getDoubleEggs());
-        existingProduction.setDamagedEggs(production.getDamagedEggs());
-        existingProduction.setWorkerPresence(production.getWorkerPresence());
-        existingProduction.setProductionPercentage(production.getProductionPercentage()); // New field
-        existingProduction.setEmail(production.getEmail());
-        Production updatedProduction = productionRepository.save(existingProduction);
-        return ResponseEntity.ok(updatedProduction);
+        if (production.getEmail() == null || production.getDate() == null || 
+            production.getTrays() == null || production.getEggs() == null || 
+            production.getBoxes() == null || production.getCost() == null || 
+            production.getMortality() == null || production.getFeeds() == null || 
+            production.getWorkerPresence() == null) {
+            return ResponseEntity.badRequest()
+                .header("Error-Message", "All required fields (email, date, trays, eggs, boxes, cost, mortality, feeds, workerPresence) must be provided.")
+                .build();
+        }
+        if (production.getEggs() < 0 || production.getBoxes() < 0 || production.getCost() < 0 || 
+            production.getMortality() < 0 || production.getFeeds() < 0) {
+            return ResponseEntity.badRequest()
+                .header("Error-Message", "Numeric fields cannot be negative.")
+                .build();
+        }
+        if (production.getDoubleEggs() != null && production.getDoubleEggs() > production.getEggs()) {
+            return ResponseEntity.badRequest()
+                .header("Error-Message", "Double eggs cannot exceed total eggs.")
+                .build();
+        }
+        if (production.getDamagedEggs() != null && production.getDamagedEggs() > production.getEggs()) {
+            return ResponseEntity.badRequest()
+                .header("Error-Message", "Damaged eggs cannot exceed total eggs.")
+                .build();
+        }
+        Production saved = productionRepository.save(production);
+        return ResponseEntity.ok(saved);
     }
 
     @GetMapping
-    public ResponseEntity<List<Production>> getProductionByEmail(@RequestParam String email) {
-        List<Production> productions = productionRepository.findByEmail(email);
-        return ResponseEntity.ok(productions);
+    public ResponseEntity<List<Production>> getAllProduction(@RequestParam String email) {
+        return ResponseEntity.ok(productionRepository.findByEmail(email));
     }
 
     @GetMapping("/check-date")
     public ResponseEntity<Map<String, Object>> checkDate(@RequestParam String date, @RequestParam String email) {
-        Production production = productionRepository.findByDateAndEmail(date, email)
-                .orElse(null);
+        Optional<Production> production = productionRepository.findByEmailAndDate(email, date);
         Map<String, Object> response = new HashMap<>();
-        response.put("exists", production != null);
-        response.put("data", production);
+        if (production.isPresent()) {
+            response.put("exists", true);
+            response.put("data", production.get());
+        } else {
+            response.put("exists", false);
+        }
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/range")
+    public ResponseEntity<List<Production>> getProductionByDateRange(
+            @RequestParam String startDate,
+            @RequestParam String endDate,
+            @RequestParam String email) {
+        try {
+            // Parse and validate dates
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate start = LocalDate.parse(startDate, formatter);
+            LocalDate end = LocalDate.parse(endDate, formatter);
+
+            if (start.isAfter(end)) {
+                return ResponseEntity.badRequest()
+                    .header("Error-Message", "Start date must be before or equal to end date.")
+                    .build();
+            }
+
+            // Fetch production data within the date range
+            List<Production> productions = productionRepository.findByEmailAndDateBetween(email, startDate, endDate);
+            return ResponseEntity.ok(productions);
+        } catch (DateTimeParseException e) {
+            return ResponseEntity.badRequest()
+                .header("Error-Message", "Invalid date format. Use yyyy-MM-dd.")
+                .build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                .header("Error-Message", "Error fetching production data: " + e.getMessage())
+                .build();
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Production> updateProduction(@PathVariable Long id, @RequestBody Production production) {
+        if (!productionRepository.existsById(id)) {
+            return ResponseEntity.badRequest()
+                .header("Error-Message", "Production record with ID " + id + " not found.")
+                .build();
+        }
+        if (production.getEmail() == null || production.getDate() == null || 
+            production.getTrays() == null || production.getEggs() == null || 
+            production.getBoxes() == null || production.getCost() == null || 
+            production.getMortality() == null || production.getFeeds() == null || 
+            production.getWorkerPresence() == null) {
+            return ResponseEntity.badRequest()
+                .header("Error-Message", "All required fields (email, date, trays, eggs, boxes, cost, mortality, feeds, workerPresence) must be provided.")
+                .build();
+        }
+        if (production.getEggs() < 0 || production.getBoxes() < 0 || production.getCost() < 0 || 
+            production.getMortality() < 0 || production.getFeeds() < 0) {
+            return ResponseEntity.badRequest()
+                .header("Error-Message", "Numeric fields cannot be negative.")
+                .build();
+        }
+        if (production.getDoubleEggs() != null && production.getDoubleEggs() > production.getEggs()) {
+            return ResponseEntity.badRequest()
+                .header("Error-Message", "Double eggs cannot exceed total eggs.")
+                .build();
+        }
+        if (production.getDamagedEggs() != null && production.getDamagedEggs() > production.getEggs()) {
+            return ResponseEntity.badRequest()
+                .header("Error-Message", "Damaged eggs cannot exceed total eggs.")
+                .build();
+        }
+        production.setId(id);
+        Production updated = productionRepository.save(production);
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/by-email")

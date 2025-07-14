@@ -10,9 +10,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProductionRepository extends JpaRepository<Production, Long> {
-    List<Production> findByEmail(String email);
+    List<Production> findByEmail(@Param("email") String email);
 
-    Optional<Production> findByDateAndEmail(String date, String email);
+    @Query("SELECT p FROM Production p WHERE p.email = :email AND p.date = :date")
+    Optional<Production> findByEmailAndDate(@Param("email") String email, @Param("date") String date);
+
+    @Query("SELECT p FROM Production p WHERE p.email = :email AND p.date BETWEEN :startDate AND :endDate")
+    List<Production> findByEmailAndDateBetween(@Param("email") String email, @Param("startDate") String startDate, @Param("endDate") String endDate);
 
     @Modifying
     @Query("DELETE FROM Production p WHERE p.email = :email")

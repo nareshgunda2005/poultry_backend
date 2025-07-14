@@ -11,9 +11,9 @@ public class ShedExpenses {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String date;
-    private String shedDescription; // Renamed for clarity
-    private double cost;
-    private String email; // Added email field
+    private String shedDescription;
+    private Double cost; // Changed to Double for consistency
+    private String email;
 
     public ShedExpenses() {}
     public Long getId() { return id; }
@@ -22,8 +22,8 @@ public class ShedExpenses {
     public void setDate(String date) { this.date = date; }
     public String getShedDescription() { return shedDescription; }
     public void setShedDescription(String shedDescription) { this.shedDescription = shedDescription; }
-    public double getCost() { return cost; }
-    public void setCost(double cost) { this.cost = cost; }
+    public Double getCost() { return cost; }
+    public void setCost(Double cost) { this.cost = cost; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 }

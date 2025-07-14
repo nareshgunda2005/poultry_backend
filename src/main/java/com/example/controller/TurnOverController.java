@@ -46,7 +46,7 @@ public class TurnOverController {
         }
 
         try {
-            // Fetch sales data within the date range for the given email
+            // Fetch sales data
             List<OutersSales> outersSales = outersSalesRepository.findByEmail(email)
                     .stream()
                     .filter(s -> s.getDate().compareTo(fromDate) >= 0 && s.getDate().compareTo(toDate) <= 0)
@@ -62,10 +62,14 @@ public class TurnOverController {
             double totalDealersSales = dealersSales.stream().mapToDouble(DealersSales::getAmount).sum();
             double totalSales = totalOutersSales + totalDealersSales;
 
-            // Fetch expenses data within the date range for the given email
+            // Fetch expenses data
             List<FoodExpenses> foodExpenses = foodExpensesRepository.findByEmail(email)
                     .stream()
-                    .filter(e -> e.getDate().compareTo(fromDate) >= 0 && e.getDate().compareTo(toDate) <= 0)
+                    .filter(e -> {
+                        boolean matches = e.getDate().compareTo(fromDate) >= 0 && e.getDate().compareTo(toDate) <= 0;
+                        System.out.println("Food Expense: Date=" + e.getDate() + ", Cost=" + e.getCost() + ", Email=" + e.getEmail() + ", Matches=" + matches);
+                        return matches;
+                    })
                     .toList();
 
             List<VaccinationExpenses> vaccinationExpenses = vaccinationExpensesRepository.findByEmail(email)
@@ -98,6 +102,15 @@ public class TurnOverController {
             double totalExpenses = totalFoodExpenses + totalVaccinationExpenses + totalMedicineExpenses +
                     totalShedExpenses + totalOtherExpenses;
 
+            // Log totals for debugging
+            System.out.println("Total Food Expenses: " + totalFoodExpenses);
+            System.out.println("Total Vaccination Expenses: " + totalVaccinationExpenses);
+            System.out.println("Total Medicine Expenses: " + totalMedicineExpenses);
+            System.out.println("Total Shed Expenses: " + totalShedExpenses);
+            System.out.println("Total Other Expenses: " + totalOtherExpenses);
+            System.out.println("Total Expenses: " + totalExpenses);
+            System.out.println("Total Sales: " + totalSales);
+
             // Calculate profit
             double profit = totalSales - totalExpenses;
 
@@ -109,6 +122,7 @@ public class TurnOverController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(500).body(null);
         }
     }
