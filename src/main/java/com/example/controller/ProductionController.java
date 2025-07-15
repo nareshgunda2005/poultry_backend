@@ -17,7 +17,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/production")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://poultry-c9ccc.web.app")
 public class ProductionController {
 
     @Autowired
