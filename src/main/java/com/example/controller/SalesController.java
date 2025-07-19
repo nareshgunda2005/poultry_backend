@@ -15,7 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/sales")
-@CrossOrigin(origins = "https://poultry-c9ccc.web.app")
+@CrossOrigin(origins = "http://localhost:3000")
 public class SalesController {
 
     @Autowired

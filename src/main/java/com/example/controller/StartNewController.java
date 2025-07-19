@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/startnew")
-@CrossOrigin(origins = "https://poultry-c9ccc.web.app")
+@CrossOrigin(origins = "http://localhost:3000")
 public class StartNewController {
 
     @Autowired

@@ -4,6 +4,7 @@ import com.example.model.User;
 import com.example.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,11 +17,14 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "https://poultry-c9ccc.web.app")
+@CrossOrigin(origins = "http://localhost:3000") // Restrict to frontend origin
 public class AuthController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder; // Add BCryptPasswordEncoder
 
     private static final String UPLOAD_DIR = "Uploads/";
 
@@ -34,10 +38,9 @@ public class AuthController {
             @RequestPart("email") String email,
             @RequestPart("password") String password,
             @RequestPart("username") String username,
-            @RequestPart("poultryName") String poultryName, // Added poultryName
+            @RequestPart("poultryName") String poultryName,
             @RequestPart(value = "profileImage", required = false) MultipartFile profileImage) {
         try {
-            // Check if user already exists
             User existingUser = userRepository.findByEmail(email);
             if (existingUser != null) {
                 Map<String, String> response = new HashMap<>();
@@ -45,7 +48,6 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Handle image upload
             String imagePath = null;
             if (profileImage != null && !profileImage.isEmpty()) {
                 File uploadDir = new File(UPLOAD_DIR);
@@ -60,12 +62,11 @@ public class AuthController {
                 imagePath = "/Uploads/" + fileName;
             }
 
-            // Create and save the user
             User user = new User();
             user.setEmail(email);
-            user.setPassword(password); // Plain text
+            user.setPassword(passwordEncoder.encode(password)); // Encode password
             user.setUsername(username);
-            user.setPoultryName(poultryName); // Set poultryName
+            user.setPoultryName(poultryName);
             user.setProfileImage(imagePath);
 
             userRepository.save(user);
@@ -83,8 +84,8 @@ public class AuthController {
     @PostMapping("/signin")
     public ResponseEntity<User> signin(@RequestBody User user) {
         User dbUser = userRepository.findByEmail(user.getEmail());
-        if (dbUser != null && user.getPassword().equals(dbUser.getPassword())) {
-            return ResponseEntity.ok(dbUser); // Returns user with poultryName
+        if (dbUser != null && passwordEncoder.matches(user.getPassword(), dbUser.getPassword())) {
+            return ResponseEntity.ok(dbUser);
         }
         return ResponseEntity.status(401).body(null);
     }
@@ -96,7 +97,7 @@ public class AuthController {
 
         User dbUser = userRepository.findByEmail(email);
         Map<String, Boolean> response = new HashMap<>();
-        if (dbUser != null && password.equals(dbUser.getPassword())) {
+        if (dbUser != null && passwordEncoder.matches(password, dbUser.getPassword())) {
             response.put("verified", true);
         } else {
             response.put("verified", false);
@@ -110,7 +111,7 @@ public class AuthController {
         if (user == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(user); // Returns user with poultryName
+        return ResponseEntity.ok(user);
     }
 
     @PutMapping(value = "/update-password", consumes = {"multipart/form-data"})
@@ -125,7 +126,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            user.setPassword(newPassword);
+            user.setPassword(passwordEncoder.encode(newPassword)); // Encode new password
             userRepository.save(user);
 
             Map<String, String> response = new HashMap<>();

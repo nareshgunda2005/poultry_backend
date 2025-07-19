@@ -12,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/turnover")
-@CrossOrigin(origins = "https://poultry-c9ccc.web.app")
+@CrossOrigin(origins = "http://localhost:3000")
 public class TurnOverController {
 
     @Autowired
