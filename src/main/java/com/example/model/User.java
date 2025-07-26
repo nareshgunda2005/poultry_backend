@@ -3,17 +3,22 @@ package com.example.model;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "user")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String email;
     private String password;
     private String username;
     private String poultryName;
     private String profileImage;
 
-    // Getters and Setters
+    // Constructors
+    public User() {}
+
+    // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getEmail() { return email; }
